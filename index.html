@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a73e8">
+  <meta name="description" content="App gestione interna sala e cucina">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ristorante">
+  <title>Gestione Ristorante</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+
+  <!-- SCHERMATA LOGIN -->
+  <div id="screen-login" class="screen active">
+    <div class="login-box">
+      <div class="login-logo">&#127869;</div>
+      <h1>Gestione Ristorante</h1>
+      <p class="login-subtitle">Inserisci il tuo nome per continuare</p>
+      <input type="text" id="input-nome" placeholder="Il tuo nome..." autocomplete="off" maxlength="30">
+      <select id="input-reparto">
+        <option value="">Seleziona reparto...</option>
+        <option value="Sala">Sala</option>
+        <option value="Cucina">Cucina</option>
+      </select>
+      <button id="btn-accedi" onclick="accedi()">Accedi</button>
+      <p class="login-note">Nessuna password richiesta. Il nome viene salvato sul tuo dispositivo.</p>
+    </div>
+  </div>
+
+  <!-- APP PRINCIPALE -->
+  <div id="screen-app" class="screen">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="header-logo">&#127869;</span>
+        <span class="header-title">Ristorante</span>
+      </div>
+      <div class="header-right">
+        <span id="header-utente" class="header-user"></span>
+        <button class="btn-logout" onclick="logout()" title="Cambia utente">&#x21BA;</button>
+      </div>
+    </header>
+
+    <!-- NAVIGAZIONE -->
+    <nav class="app-nav">
+      <button class="nav-btn active" onclick="mostraModulo('turni')" id="nav-turni">
+        <span class="nav-icon">&#128197;</span>
+        <span class="nav-label">Turni</span>
+      </button>
+      <button class="nav-btn" onclick="mostraModulo('bacheca')" id="nav-bacheca">
+        <span class="nav-icon">&#128172;</span>
+        <span class="nav-label">Bacheca</span>
+        <span class="badge" id="badge-bacheca" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" onclick="mostraModulo('ordini')" id="nav-ordini">
+        <span class="nav-icon">&#128230;</span>
+        <span class="nav-label">Ordini</span>
+        <span class="badge" id="badge-ordini" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" onclick="mostraModulo('attivita')" id="nav-attivita">
+        <span class="nav-icon">&#9989;</span>
+        <span class="nav-label">Attivita</span>
+        <span class="badge" id="badge-attivita" style="display:none">0</span>
+      </button>
+    </nav>
+
+    <!-- CONTENUTO MODULI -->
+    <main class="app-main">
+
+      <!-- MODULO TURNI -->
+      <div id="modulo-turni" class="modulo active">
+        <div class="modulo-header">
+          <h2>&#128197; Turni Sala</h2>
+          <span class="modulo-data" id="turni-data"></span>
+        </div>
+        <div class="settimana-nav">
+          <button onclick="settimanaPrec()">&larr; Prec</button>
+          <span id="settimana-label"></span>
+          <button onclick="settimanaSucc()">Succ &rarr;</button>
+        </div>
+        <div id="turni-grid" class="turni-grid"></div>
+        <div class="turni-legenda">
+          <span class="leg-item"><span class="dot colazione"></span> Colazione</span>
+          <span class="leg-item"><span class="dot cena"></span> Cena</span>
+          <span class="leg-item"><span class="dot spezzato"></span> Spezzato</span>
+          <span class="leg-item"><span class="dot riposo"></span> Riposo</span>
+        </div>
+      </div>
+
+      <!-- MODULO BACHECA -->
+      <div id="modulo-bacheca" class="modulo">
+        <div class="modulo-header">
+          <h2>&#128172; Bacheca</h2>
+          <button class="btn-nuovo" onclick="apriFormPost()">+ Nuovo post</button>
+        </div>
+        <!-- Form nuovo post -->
+        <div id="form-post" class="form-card" style="display:none">
+          <h3>Nuovo messaggio</h3>
+          <select id="post-categoria">
+            <option value="Generale">Generale</option>
+            <option value="Urgente">Urgente</option>
+            <option value="Cucina">Cucina</option>
+            <option value="Sala">Sala</option>
+            <option value="Ordini">Ordini</option>
+          </select>
+          <textarea id="post-testo" placeholder="Scrivi il tuo messaggio..." rows="4" maxlength="500"></textarea>
+          <div class="form-actions">
+            <button onclick="inviaPost()" class="btn-primary">Pubblica</button>
+            <button onclick="chiudiFormPost()" class="btn-secondary">Annulla</button>
+          </div>
+        </div>
+        <!-- Lista post -->
+        <div id="bacheca-lista" class="bacheca-lista"></div>
+      </div>
+
+      <!-- MODULO ORDINI -->
+      <div id="modulo-ordini" class="modulo">
+        <div class="modulo-header">
+          <h2>&#128230; Ordini &amp; Scorte</h2>
+          <button class="btn-nuovo" onclick="apriFormOrdine()">+ Segnala</button>
+        </div>
+        <!-- Filtri -->
+        <div class="filtri-bar">
+          <button class="filtro-btn active" onclick="filtraOrdini('tutti')" id="f-tutti">Tutti</button>
+          <button class="filtro-btn" onclick="filtraOrdini('Sala')" id="f-sala">Sala</button>
+          <button class="filtro-btn" onclick="filtraOrdini('Cucina')" id="f-cucina">Cucina</button>
+          <button class="filtro-btn" onclick="filtraOrdini('urgente')" id="f-urgente">&#128680; Urgenti</button>
+        </div>
+        <!-- Form nuovo ordine -->
+        <div id="form-ordine" class="form-card" style="display:none">
+          <h3>Segnala articolo mancante</h3>
+          <select id="ordine-reparto">
+            <option value="Sala">Sala</option>
+            <option value="Cucina">Cucina</option>
+          </select>
+          <select id="ordine-categoria">
+            <option value="Fresco">Fresco (latte, yogurt, panna...)</option>
+            <option value="Secco">Secco (pasta, biscotti, zucchero...)</option>
+            <option value="Bevande">Bevande</option>
+            <option value="Pulizia">Prodotti pulizia</option>
+            <option value="Altro">Altro</option>
+          </select>
+          <input type="text" id="ordine-articolo" placeholder="Nome articolo..." maxlength="100">
+          <input type="text" id="ordine-quantita" placeholder="Quantita (es: 6 litri, 2 confezioni...)" maxlength="50">
+          <label class="check-label">
+            <input type="checkbox" id="ordine-urgente"> Urgente (finito completamente)
+          </label>
+          <textarea id="ordine-note" placeholder="Note aggiuntive..." rows="2" maxlength="200"></textarea>
+          <div class="form-actions">
+            <button onclick="inviaOrdine()" class="btn-primary">Segnala</button>
+            <button onclick="chiudiFormOrdine()" class="btn-secondary">Annulla</button>
+          </div>
+        </div>
+        <div id="ordini-lista" class="ordini-lista"></div>
+      </div>
+
+      <!-- MODULO ATTIVITA -->
+      <div id="modulo-attivita" class="modulo">
+        <div class="modulo-header">
+          <h2>&#9989; Attivita</h2>
+          <button class="btn-nuovo" onclick="apriFormAttivita()">+ Nuova</button>
+        </div>
+        <div class="filtri-bar">
+          <button class="filtro-btn active" onclick="filtraAttivita('tutte')" id="fa-tutte">Tutte</button>
+          <button class="filtro-btn" onclick="filtraAttivita('Da fare')" id="fa-dafare">Da fare</button>
+          <button class="filtro-btn" onclick="filtraAttivita('In corso')" id="fa-incorso">In corso</button>
+          <button class="filtro-btn" onclick="filtraAttivita('Completata')" id="fa-completata">Completate</button>
+        </div>
+        <div id="form-attivita" class="form-card" style="display:none">
+          <h3>Nuova attivita</h3>
+          <input type="text" id="att-titolo" placeholder="Titolo attivita..." maxlength="100">
+          <textarea id="att-descrizione" placeholder="Descrizione..." rows="3" maxlength="300"></textarea>
+          <select id="att-reparto">
+            <option value="Sala">Sala</option>
+            <option value="Cucina">Cucina</option>
+            <option value="Generale">Generale</option>
+          </select>
+          <select id="att-priorita">
+            <option value="Alta">Alta priorita</option>
+            <option value="Media">Media priorita</option>
+            <option value="Bassa">Bassa priorita</option>
+          </select>
+          <div class="form-actions">
+            <button onclick="inviaAttivita()" class="btn-primary">Crea</button>
+            <button onclick="chiudiFormAttivita()" class="btn-secondary">Annulla</button>
+          </div>
+        </div>
+        <div id="attivita-lista" class="attivita-lista"></div>
+      </div>
+
+    </main>
+
+    <!-- TOAST NOTIFICA -->
+    <div id="toast" class="toast"></div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading" class="loading-overlay" style="display:none">
+      <div class="spinner"></div>
+      <p>Caricamento...</p>
+    </div>
+
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/api.js"></script>
+  <script src="js/turni.js"></script>
+  <script src="js/bacheca.js"></script>
+  <script src="js/ordini.js"></script>
+  <script src="js/attivita.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
