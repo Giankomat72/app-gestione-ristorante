@@ -42,6 +42,8 @@ async function apiPost(azione, foglio, dati, id) {
   } catch(e) { console.warn('apiPost error:',e); return {ok:false}; }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+
 // LOGIN HANDLER
 $('btn-login').addEventListener('click', async () => {
   const nome=$('sel-nome').value, pin=$('inp-pin').value.trim();
@@ -115,4 +117,4 @@ $('btn-login').addEventListener('click', async () => {
     else alert('Errore salvataggio.');
   });
 
-
+});
