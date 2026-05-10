@@ -1,17 +1,19 @@
 /* ==========================================
    app.js - Ristorante Sabrina PWA
-   Gestione Login, Navigazione, CRUD locale
+   Gestione Login, Navigazione, CRUD
+   Backend: Google Sheets via Apps Script
    ========================================== */
 
 'use strict';
 
-// ===== STATE =====
+// ===== CONFIG BACKEND =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbwbDz9DA_o58i07lcLFH-MOu_A45Wo0-2lGHx2fNAaoxvYyA79x8ictrRPsJxCFuVn2Tg/exec';
+
+// ===== STATE LOCALE =====
 const state = {
   utente: null,
   ruolo: null,
-  bacheca: [
-    { id: 1, autore: 'Sistema', data: oggi(), testo: 'Benvenuti nell\'app di gestione Ristorante Sabrina!' }
-  ],
+  bacheca: [],
   ordini: [],
   turni: [],
   attivita: []
@@ -20,11 +22,9 @@ const state = {
 function oggi() {
   return new Date().toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-
 function ora() {
   return new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 }
-
 function uid() {
   return Date.now() + Math.random().toString(36).slice(2, 6);
 }
@@ -32,19 +32,41 @@ function uid() {
 // ===== DOM REFS =====
 const $ = id => document.getElementById(id);
 
+// ===== API HELPERS =====
+async function apiGet(foglio) {
+  try {
+    const res = await fetch(API_URL + '?azione=leggi&foglio=' + foglio);
+    const json = await res.json();
+    return json.ok ? json.righe : [];
+  } catch(e) {
+    console.warn('API GET error:', e);
+    return [];
+  }
+}
+
+async function apiPost(azione, foglio, dati) {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ azione, foglio, dati })
+    });
+    return await res.json();
+  } catch(e) {
+    console.warn('API POST error:', e);
+    return { ok: false };
+  }
+}
+
 // ===== LOGIN =====
-$('btn-login').addEventListener('click', () => {
+$('btn-login').addEventListener('click', async () => {
   const nome  = $('sel-nome').value;
   const ruolo = $('sel-ruolo').value;
-  if (!nome || !ruolo) {
-    alert('Seleziona nome e ruolo per continuare.');
-    return;
-  }
+  if (!nome || !ruolo) { alert('Seleziona nome e ruolo.'); return; }
   state.utente = nome;
   state.ruolo  = ruolo;
   $('header-utente').textContent = nome + ' (' + ruolo + ')';
   showScreen('screen-app');
-  renderAll();
+  await caricaTutto();
 });
 
 $('btn-logout').addEventListener('click', () => {
@@ -64,15 +86,36 @@ function showScreen(id) {
 // ===== BOTTOM NAV =====
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const target = btn.dataset.target;
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    $('sec-' + target).classList.add('active');
+    $('sec-' + btn.dataset.target).classList.add('active');
   });
 });
 
-// ===== RENDER ALL =====
+// ===== CARICA TUTTO DAL BACKEND =====
+async function caricaTutto() {
+  mostraLoading(true);
+  const [bacheca, ordini, turni, attivita] = await Promise.all([
+    apiGet('Bacheca'),
+    apiGet('Ordini'),
+    apiGet('TurniSala'),
+    apiGet('Attivita')
+  ]);
+  state.bacheca  = bacheca  || [];
+  state.ordini   = ordini   || [];
+  state.turni    = turni    || [];
+  state.attivita = attivita || [];
+  mostraLoading(false);
+  renderAll();
+}
+
+function mostraLoading(attivo) {
+  // Indicatore minimo
+  const h = $('header-utente');
+  if (h) h.style.opacity = attivo ? '0.5' : '1';
+}
+
 function renderAll() {
   renderBacheca();
   renderOrdini();
@@ -91,28 +134,27 @@ function renderBacheca() {
   }
   list.innerHTML = state.bacheca.slice().reverse().map(p => `
     <div class="card">
-      <div class="card-meta">${p.autore} &bull; ${p.data} ${p.ora || ''}</div>
-      <div class="card-body">${p.testo}</div>
+      <div class="card-meta">${p.Autore || p.autore || ''} &bull; ${p.DataOra || p.data || ''}</div>
+      <div class="card-body">${p.Testo || p.testo || ''}</div>
     </div>
   `).join('');
 }
 
-$('btn-new-post').addEventListener('click', () => {
-  toggle('form-post');
-});
-
-$('btn-cancel-post').addEventListener('click', () => {
-  hide('form-post');
-  $('txt-post').value = '';
-});
-
-$('btn-save-post').addEventListener('click', () => {
+$('btn-new-post').addEventListener('click', () => toggle('form-post'));
+$('btn-cancel-post').addEventListener('click', () => { hide('form-post'); $('txt-post').value = ''; });
+$('btn-save-post').addEventListener('click', async () => {
   const testo = $('txt-post').value.trim();
   if (!testo) return;
-  state.bacheca.push({ id: uid(), autore: state.utente, data: oggi(), ora: ora(), testo });
-  $('txt-post').value = '';
-  hide('form-post');
-  renderBacheca();
+  const dati = { Autore: state.utente, Testo: testo, DataOra: oggi() + ' ' + ora() };
+  const res = await apiPost('aggiungi', 'Bacheca', dati);
+  if (res.ok) {
+    state.bacheca.push({ ...dati, ID: res.id });
+    $('txt-post').value = '';
+    hide('form-post');
+    renderBacheca();
+  } else {
+    alert('Errore salvataggio.');
+  }
 });
 
 // ===========================
@@ -126,36 +168,26 @@ function renderOrdini() {
   }
   list.innerHTML = state.ordini.slice().reverse().map(o => `
     <div class="card">
-      <div class="card-meta">Tavolo ${o.tavolo} &bull; ${o.autore} &bull; ${o.ora}</div>
-      <div class="card-body">${o.testo}</div>
-      <button class="btn-secondary" style="margin-top:8px;font-size:12px;padding:4px 10px" onclick="chiudiOrdine('${o.id}')">
-        Chiudi ordine
-      </button>
+      <div class="card-meta">Tavolo ${o.Tavolo || o.tavolo || '?'} &bull; ${o.Cameriere || o.autore || ''} &bull; ${o.OraOrdine || o.ora || ''}</div>
+      <div class="card-body">${o.Ordine || o.testo || ''}</div>
     </div>
   `).join('');
 }
 
-window.chiudiOrdine = function(id) {
-  state.ordini = state.ordini.filter(o => o.id !== id);
-  renderOrdini();
-};
-
 $('btn-new-ordine').addEventListener('click', () => toggle('form-ordine'));
-$('btn-cancel-ordine').addEventListener('click', () => {
-  hide('form-ordine');
-  $('txt-tavolo').value = '';
-  $('txt-ordine').value = '';
-});
-
-$('btn-save-ordine').addEventListener('click', () => {
+$('btn-cancel-ordine').addEventListener('click', () => { hide('form-ordine'); $('txt-tavolo').value=''; $('txt-ordine').value=''; });
+$('btn-save-ordine').addEventListener('click', async () => {
   const tavolo = $('txt-tavolo').value;
   const testo  = $('txt-ordine').value.trim();
-  if (!tavolo || !testo) { alert('Inserisci tavolo e descrizione ordine.'); return; }
-  state.ordini.push({ id: uid(), tavolo, testo, autore: state.utente, ora: ora() });
-  $('txt-tavolo').value = '';
-  $('txt-ordine').value = '';
-  hide('form-ordine');
-  renderOrdini();
+  if (!tavolo || !testo) { alert('Inserisci tavolo e ordine.'); return; }
+  const dati = { Tavolo: tavolo, Ordine: testo, Cameriere: state.utente, OraOrdine: ora(), Stato: 'aperto' };
+  const res = await apiPost('aggiungi', 'Ordini', dati);
+  if (res.ok) {
+    state.ordini.push({ ...dati, ID: res.id });
+    $('txt-tavolo').value = ''; $('txt-ordine').value = '';
+    hide('form-ordine');
+    renderOrdini();
+  } else { alert('Errore salvataggio.'); }
 });
 
 // ===========================
@@ -167,41 +199,39 @@ function renderTurni() {
     list.innerHTML = '<div class="empty-state">Nessun turno registrato</div>';
     return;
   }
-  // Raggruppa per data
   const byDate = {};
   state.turni.forEach(t => {
-    if (!byDate[t.data]) byDate[t.data] = [];
-    byDate[t.data].push(t);
+    const k = t.DataTurno || t.data || '?';
+    if (!byDate[k]) byDate[k] = [];
+    byDate[k].push(t);
   });
   list.innerHTML = Object.keys(byDate).sort().reverse().map(data => `
     <div class="card">
       <div class="card-meta" style="font-weight:700;color:var(--accent-h)">${data}</div>
       ${byDate[data].map(t => `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-          <span class="card-body">${t.utente}</span>
-          <span class="card-tag ${t.tipo}">${t.tipo}</span>
+          <span class="card-body">${t.NomePersona || t.utente || ''}</span>
+          <span class="card-tag ${(t.TipoTurno||t.tipo||'').toLowerCase()}">${t.TipoTurno || t.tipo || ''}</span>
         </div>
       `).join('')}
     </div>
   `).join('');
 }
 
-$('btn-new-turno').addEventListener('click', () => {
-  $('txt-data').value = new Date().toISOString().split('T')[0];
-  toggle('form-turno');
-});
+$('btn-new-turno').addEventListener('click', () => { $('txt-data').value = new Date().toISOString().split('T')[0]; toggle('form-turno'); });
 $('btn-cancel-turno').addEventListener('click', () => hide('form-turno'));
-$('btn-save-turno').addEventListener('click', () => {
+$('btn-save-turno').addEventListener('click', async () => {
   const data   = $('txt-data').value;
   const tipo   = $('sel-turno-tipo').value;
   const utente = $('sel-turno-utente').value;
   if (!data) { alert('Seleziona una data.'); return; }
-  // Evita duplicati
-  const dup = state.turni.find(t => t.data === data && t.tipo === tipo && t.utente === utente);
-  if (dup) { alert('Turno gia\' presente.'); return; }
-  state.turni.push({ id: uid(), data, tipo, utente });
-  hide('form-turno');
-  renderTurni();
+  const dati = { DataTurno: data, TipoTurno: tipo, NomePersona: utente, Reparto: 'Sala' };
+  const res = await apiPost('aggiungi', 'TurniSala', dati);
+  if (res.ok) {
+    state.turni.push({ ...dati, ID: res.id });
+    hide('form-turno');
+    renderTurni();
+  } else { alert('Errore salvataggio.'); }
 });
 
 // ===========================
@@ -209,67 +239,48 @@ $('btn-save-turno').addEventListener('click', () => {
 // ===========================
 function renderAttivita() {
   const list = $('attivita-list');
-  const attive = state.attivita.filter(a => !a.done);
-  const fatte  = state.attivita.filter(a => a.done);
   if (!state.attivita.length) {
-    list.innerHTML = '<div class="empty-state">Nessuna attivita\' in corso</div>';
+    list.innerHTML = '<div class="empty-state">Nessuna attivita in corso</div>';
     return;
   }
   const renderItem = a => `
-    <div class="card" style="${a.done ? 'opacity:.5' : ''}">
+    <div class="card" style="${a.Completata==='si'||a.done?'opacity:.5':''}">
       <div style="display:flex;align-items:center;gap:10px">
-        <input type="checkbox" ${a.done ? 'checked' : ''}
-          onchange="toggleTask('${a.id}')"
-          style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)" />
-        <span class="card-body" style="${a.done ? 'text-decoration:line-through' : ''}">${a.testo}</span>
+        <span class="card-body" style="${a.Completata==='si'||a.done?'text-decoration:line-through':''}">${a.Descrizione||a.testo||''}</span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:8px">
-        <span class="card-meta">${a.autore} &bull; ${a.data}</span>
-        <span class="card-tag ${a.priorita}">${a.priorita}</span>
+        <span class="card-meta">${a.AssegnatoA||a.autore||''} &bull; ${a.DataCreazione||a.data||''}</span>
+        <span class="card-tag ${(a.Priorita||a.priorita||'normale').toLowerCase()}">${a.Priorita||a.priorita||'normale'}</span>
       </div>
     </div>
   `;
-  list.innerHTML =
-    attive.map(renderItem).join('') +
-    (fatte.length ? '<div class="card-meta" style="margin:12px 0 6px">Completate</div>' + fatte.map(renderItem).join('') : '');
+  list.innerHTML = state.attivita.map(renderItem).join('');
 }
 
-window.toggleTask = function(id) {
-  const t = state.attivita.find(a => a.id === id);
-  if (t) t.done = !t.done;
-  renderAttivita();
-};
-
 $('btn-new-task').addEventListener('click', () => toggle('form-task'));
-$('btn-cancel-task').addEventListener('click', () => {
-  hide('form-task');
-  $('txt-task').value = '';
-});
-
-$('btn-save-task').addEventListener('click', () => {
+$('btn-cancel-task').addEventListener('click', () => { hide('form-task'); $('txt-task').value=''; });
+$('btn-save-task').addEventListener('click', async () => {
   const testo    = $('txt-task').value.trim();
   const priorita = $('sel-task-priorita').value;
-  if (!testo) { alert('Inserisci la descrizione dell\'attivita\'.'); return; }
-  state.attivita.push({ id: uid(), testo, priorita, done: false, autore: state.utente, data: oggi() });
-  $('txt-task').value = '';
-  hide('form-task');
-  renderAttivita();
+  if (!testo) { alert('Inserisci la descrizione.'); return; }
+  const dati = { Descrizione: testo, Priorita: priorita, AssegnatoA: state.utente, Completata: 'no', DataCreazione: oggi() };
+  const res = await apiPost('aggiungi', 'Attivita', dati);
+  if (res.ok) {
+    state.attivita.push({ ...dati, ID: res.id });
+    $('txt-task').value = '';
+    hide('form-task');
+    renderAttivita();
+  } else { alert('Errore salvataggio.'); }
 });
 
 // ===== UTILS =====
-function toggle(id) {
-  const el = $(id);
-  el.classList.toggle('hidden');
-}
-
-function hide(id) {
-  $(id).classList.add('hidden');
-}
+function toggle(id) { $(id).classList.toggle('hidden'); }
+function hide(id)   { $(id).classList.add('hidden'); }
 
 // ===== PWA SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
-      .catch(err => console.warn('SW non registrato:', err));
+      .catch(err => console.warn('SW:', err));
   });
 }
