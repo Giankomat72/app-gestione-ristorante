@@ -4,7 +4,6 @@
    + Bacheca dal backend Google Sheets
    + Turni: colazione / pranzo / cena
    ========================================== */
-
 'use strict';
 
 // ===== CONFIG =====
@@ -18,6 +17,14 @@ const PIN_UTENTI = {
   'Marco':     '4567',
   'Elena':     '5678',
   'Luca':      '6789'
+};
+
+// Mappa nomi fogli Google Sheets
+const FOGLI = {
+  bacheca:  'PostBacheca',
+  ordini:   'Ordini',
+  turni:    'TurniSala',
+  attivita: 'Attivita'
 };
 
 // ===== STATE =====
@@ -42,7 +49,7 @@ function ora() {
 // ===== API =====
 async function apiGet(foglio) {
   try {
-    const res  = await fetch(API_URL + '?azione=leggi&foglio=' + encodeURIComponent(foglio));
+    const res = await fetch(API_URL + '?azione=leggi&foglio=' + encodeURIComponent(foglio));
     const json = await res.json();
     if (json.ok) return json.righe || [];
     console.warn('apiGet errore:', json.errore);
@@ -71,14 +78,12 @@ $('btn-login').addEventListener('click', async () => {
   const nome = $('sel-nome').value;
   const pin  = $('inp-pin').value.trim();
 
-  // Nascondi errori precedenti
   $('pin-errore').classList.add('hidden');
   $('pin-occupato').classList.add('hidden');
 
   if (!nome) { alert('Seleziona il tuo nome.'); return; }
   if (!pin)  { alert('Inserisci il tuo PIN.'); return; }
 
-  // Verifica PIN
   if (pin !== PIN_UTENTI[nome]) {
     $('pin-errore').classList.remove('hidden');
     $('inp-pin').value = '';
@@ -86,13 +91,8 @@ $('btn-login').addEventListener('click', async () => {
     return;
   }
 
-  // Segna sessione attiva in localStorage
   const sessioneKey = 'sessione_' + nome;
   const sessioneId  = Date.now().toString();
-  const sessioneEsistente = localStorage.getItem(sessioneKey);
-
-  // Se c'e' gia' una sessione attiva (stesso browser) la sovrascriviamo
-  // (protezione base: impedisce login doppio sullo stesso dispositivo)
   localStorage.setItem(sessioneKey, sessioneId);
   localStorage.setItem('sessione_corrente_nome', nome);
   localStorage.setItem('sessione_corrente_id',   sessioneId);
@@ -106,10 +106,7 @@ $('btn-login').addEventListener('click', async () => {
 });
 
 $('btn-logout').addEventListener('click', () => {
-  // Rimuovi sessione
-  if (state.utente) {
-    localStorage.removeItem('sessione_' + state.utente);
-  }
+  if (state.utente) localStorage.removeItem('sessione_' + state.utente);
   localStorage.removeItem('sessione_corrente_nome');
   localStorage.removeItem('sessione_corrente_id');
   state.utente = null;
@@ -137,10 +134,10 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ===== CARICA DATI =====
 async function caricaTutto() {
   const [bacheca, ordini, turni, attivita] = await Promise.all([
-    apiGet('Bacheca'),
-    apiGet('Ordini'),
-    apiGet('TurniSala'),
-    apiGet('Attivita')
+    apiGet(FOGLI.bacheca),
+    apiGet(FOGLI.ordini),
+    apiGet(FOGLI.turni),
+    apiGet(FOGLI.attivita)
   ]);
   state.bacheca  = bacheca  || [];
   state.ordini   = ordini   || [];
@@ -162,14 +159,18 @@ function renderAll() {
 function renderBacheca() {
   const list = $('bacheca-list');
   if (!state.bacheca.length) {
-    list.innerHTML = '<div class="empty-state">Nessun messaggio in bacheca</div>';
+    list.innerHTML = '<p class="empty-msg">Nessun messaggio in bacheca</p>';
     return;
   }
   list.innerHTML = state.bacheca.slice().reverse().map(p => {
     const autore = p.Autore || p.autore || '';
     const data   = p.DataOra || p.data  || '';
-    const testo  = p.Testo   || p.testo || '';
-    return '<div class="card"><div class="card-meta">' + autore + ' &bull; ' + data + '</div><div class="card-body">' + testo + '</div></div>';
+    const testo  = p.Testo  || p.testo  || '';
+    const urgente = p.Urgente === 'si' ? ' <span class="badge badge-urgente">URGENTE</span>' : '';
+    return `<div class="card post-card">
+      <div class="post-meta">${autore} &bull; ${data}${urgente}</div>
+      <div class="post-testo">${testo}</div>
+    </div>`;
   }).join('');
 }
 
@@ -178,11 +179,19 @@ $('btn-cancel-post').addEventListener('click', () => { hide('form-post'); $('txt
 $('btn-save-post').addEventListener('click', async () => {
   const testo = $('txt-post').value.trim();
   if (!testo) return;
-  const dati = { Autore: state.utente, Testo: testo, DataOra: oggi() + ' ' + ora() };
+  const dati = {
+    Autore: state.utente,
+    Testo: testo,
+    DataOra: oggi() + ' ' + ora(),
+    Categoria: 'generale',
+    Urgente: 'no',
+    Fissato: 'no',
+    Reparto: 'tutti'
+  };
   const btn = $('btn-save-post');
   btn.disabled = true;
   btn.textContent = 'Salvo...';
-  const res = await apiPost('aggiungi', 'Bacheca', dati);
+  const res = await apiPost('aggiungi', FOGLI.bacheca, dati);
   btn.disabled = false;
   btn.textContent = 'Pubblica';
   if (res.ok) {
@@ -201,15 +210,18 @@ $('btn-save-post').addEventListener('click', async () => {
 function renderOrdini() {
   const list = $('ordini-list');
   if (!state.ordini.length) {
-    list.innerHTML = '<div class="empty-state">Nessun ordine attivo</div>';
+    list.innerHTML = '<p class="empty-msg">Nessun ordine attivo</p>';
     return;
   }
   list.innerHTML = state.ordini.slice().reverse().map(o => {
-    const tavolo = o.Tavolo    || o.tavolo || '?';
-    const chi    = o.Cameriere || o.autore || '';
-    const orario = o.OraOrdine || o.ora    || '';
-    const testo  = o.Ordine    || o.testo  || '';
-    return '<div class="card"><div class="card-meta">Tavolo ' + tavolo + ' &bull; ' + chi + ' &bull; ' + orario + '</div><div class="card-body">' + testo + '</div></div>';
+    const tavolo  = o.Tavolo    || o.tavolo  || '?';
+    const chi     = o.Cameriere || o.Autore  || '';
+    const orario  = o.OraOrdine || o.DataOra || '';
+    const testo   = o.Ordine    || o.Testo   || '';
+    return `<div class="card">
+      <div class="post-meta">Tavolo ${tavolo} &bull; ${chi} &bull; ${orario}</div>
+      <div class="post-testo">${testo}</div>
+    </div>`;
   }).join('');
 }
 
@@ -219,11 +231,20 @@ $('btn-save-ordine').addEventListener('click', async () => {
   const tavolo = $('txt-tavolo').value;
   const testo  = $('txt-ordine').value.trim();
   if (!tavolo || !testo) { alert('Inserisci tavolo e ordine.'); return; }
-  const dati = { Tavolo: tavolo, Ordine: testo, Cameriere: state.utente, OraOrdine: ora(), Stato: 'aperto' };
-  const res = await apiPost('aggiungi', 'Ordini', dati);
+  const dati = {
+    Tavolo:     tavolo,
+    Ordine:     testo,
+    Cameriere:  state.utente,
+    OraOrdine:  ora(),
+    DataOra:    oggi() + ' ' + ora(),
+    Stato:      'aperto',
+    Reparto:    'sala'
+  };
+  const res = await apiPost('aggiungi', FOGLI.ordini, dati);
   if (res.ok) {
     state.ordini.push({ ...dati, ID: res.id });
-    $('txt-tavolo').value=''; $('txt-ordine').value='';
+    $('txt-tavolo').value='';
+    $('txt-ordine').value='';
     hide('form-ordine');
     renderOrdini();
   } else { alert('Errore salvataggio.'); }
@@ -237,7 +258,7 @@ const TURNO_EMOJI = { colazione: '☕', pranzo: '🌞', cena: '🌙' };
 function renderTurni() {
   const list = $('turni-list');
   if (!state.turni.length) {
-    list.innerHTML = '<div class="empty-state">Nessun turno registrato</div>';
+    list.innerHTML = '<p class="empty-msg">Nessun turno registrato</p>';
     return;
   }
   const byDate = {};
@@ -246,20 +267,21 @@ function renderTurni() {
     if (!byDate[k]) byDate[k] = [];
     byDate[k].push(t);
   });
-  // Ordine fisso per turno
   const ordine = ['colazione', 'pranzo', 'cena'];
   list.innerHTML = Object.keys(byDate).sort().reverse().map(data => {
-    const righe = ordine.filter(t => byDate[data].some(r => (r.TipoTurno||r.tipo||'').toLowerCase() === t));
-    return '<div class="card"><div class="card-meta" style="font-weight:700;color:var(--accent-h)">' + data + '</div>' +
-      righe.map(turno => {
+    return `<div class="card turno-giorno">
+      <div class="turno-data">${data}</div>
+      ${ordine.map(turno => {
         const persone = byDate[data]
           .filter(r => (r.TipoTurno||r.tipo||'').toLowerCase() === turno)
           .map(r => r.NomePersona || r.utente || '')
           .join(', ');
-        return '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><span class="card-body">' +
-          (TURNO_EMOJI[turno]||'') + ' ' + turno.charAt(0).toUpperCase()+turno.slice(1) +
-          '</span><span style="color:var(--text-muted);font-size:13px">' + persone + '</span></div>';
-      }).join('') + '</div>';
+        return `<div class="turno-riga">
+          <span class="turno-label">${TURNO_EMOJI[turno]||''} ${turno.charAt(0).toUpperCase()+turno.slice(1)}</span>
+          <span class="turno-persone">${persone || '—'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
   }).join('');
 }
 
@@ -280,7 +302,7 @@ $('btn-save-turno').addEventListener('click', async () => {
   );
   if (dup) { alert('Turno gia presente per questa persona.'); return; }
   const dati = { DataTurno: data, TipoTurno: tipo, NomePersona: utente, Reparto: 'Sala' };
-  const res = await apiPost('aggiungi', 'TurniSala', dati);
+  const res = await apiPost('aggiungi', FOGLI.turni, dati);
   if (res.ok) {
     state.turni.push({ ...dati, ID: res.id });
     hide('form-turno');
@@ -294,32 +316,39 @@ $('btn-save-turno').addEventListener('click', async () => {
 function renderAttivita() {
   const list = $('attivita-list');
   if (!state.attivita.length) {
-    list.innerHTML = '<div class="empty-state">Nessuna attivita in corso</div>';
+    list.innerHTML = '<p class="empty-msg">Nessuna attivita in corso</p>';
     return;
   }
   list.innerHTML = state.attivita.map(a => {
-    const testo  = a.Descrizione || a.testo    || '';
-    const chi    = a.AssegnatoA  || a.autore   || '';
-    const data   = a.DataCreazione||a.data     || '';
-    const prior  = (a.Priorita   || a.priorita || 'normale').toLowerCase();
-    const fatto  = a.Completata === 'si' || a.done;
-    return '<div class="card" style="' + (fatto?'opacity:.5':'') + '">' +
-      '<div class="card-body" style="' + (fatto?'text-decoration:line-through':'') + '">' + testo + '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-top:8px">' +
-        '<span class="card-meta">' + chi + ' &bull; ' + data + '</span>' +
-        '<span class="card-tag ' + prior + '">' + prior + '</span>' +
-      '</div></div>';
+    const testo = a.Descrizione || a.testo  || '';
+    const chi   = a.AssegnatoA  || a.autore || '';
+    const data  = a.DataCreazione||a.data   || '';
+    const prior = (a.Priorita || a.priorita || 'normale').toLowerCase();
+    const fatto = a.Completata === 'si' || a.done;
+    return `<div class="card task-card ${fatto ? 'task-fatto' : ''}">
+      <div class="task-testo ${fatto ? 'task-strikethrough' : ''}">${testo}</div>
+      <div class="task-meta">
+        <span>${chi} &bull; ${data}</span>
+        <span class="badge badge-${prior}">${prior}</span>
+      </div>
+    </div>`;
   }).join('');
 }
 
-$('btn-new-task').addEventListener('click', () => toggle('form-task'));
+$('btn-new-task').addEventListener('click',    () => toggle('form-task'));
 $('btn-cancel-task').addEventListener('click', () => { hide('form-task'); $('txt-task').value=''; });
 $('btn-save-task').addEventListener('click', async () => {
-  const testo  = $('txt-task').value.trim();
-  const prior  = $('sel-task-priorita').value;
+  const testo = $('txt-task').value.trim();
+  const prior = $('sel-task-priorita').value;
   if (!testo) { alert('Inserisci la descrizione.'); return; }
-  const dati = { Descrizione: testo, Priorita: prior, AssegnatoA: state.utente, Completata: 'no', DataCreazione: oggi() };
-  const res = await apiPost('aggiungi', 'Attivita', dati);
+  const dati = {
+    Descrizione: testo,
+    Priorita: prior,
+    AssegnatoA: state.utente,
+    Completata: 'no',
+    DataCreazione: oggi()
+  };
+  const res = await apiPost('aggiungi', FOGLI.attivita, dati);
   if (res.ok) {
     state.attivita.push({ ...dati, ID: res.id });
     $('txt-task').value='';
