@@ -12,7 +12,7 @@
 </head>
 <body>
 
-  <!-- SPLASH / LOGIN -->
+  <!-- LOGIN -->
   <div id="screen-login" class="screen active">
     <div class="login-box">
       <div class="logo">
@@ -26,26 +26,22 @@
           <option value="">-- Seleziona --</option>
           <option value="Giancarlo">Giancarlo</option>
           <option value="Sabrina">Sabrina</option>
+          <option value="Cecilia">Cecilia</option>
           <option value="Marco">Marco</option>
           <option value="Elena">Elena</option>
           <option value="Luca">Luca</option>
         </select>
-        <label for="sel-ruolo">Ruolo</label>
-        <select id="sel-ruolo">
-          <option value="">-- Seleziona --</option>
-          <option value="admin">Admin</option>
-          <option value="sala">Sala</option>
-          <option value="cucina">Cucina</option>
-        </select>
+        <label for="inp-pin">PIN personale</label>
+        <input type="password" id="inp-pin" placeholder="PIN a 4 cifre" maxlength="4" inputmode="numeric" pattern="[0-9]*" />
+        <p id="pin-errore" class="pin-errore hidden">PIN errato. Riprova.</p>
+        <p id="pin-occupato" class="pin-errore hidden">Utente gia connesso su un altro dispositivo.</p>
         <button id="btn-login" class="btn-primary">Accedi</button>
       </div>
     </div>
   </div>
 
-  <!-- APP PRINCIPALE -->
+  <!-- APP -->
   <div id="screen-app" class="screen">
-
-    <!-- HEADER -->
     <header class="app-header">
       <div class="header-left">
         <span class="header-logo">&#127869;</span>
@@ -57,7 +53,6 @@
       </div>
     </header>
 
-    <!-- CONTENUTO SEZIONI -->
     <main class="app-main">
 
       <!-- BACHECA -->
@@ -66,14 +61,9 @@
           <h2>&#128203; Bacheca</h2>
           <button class="btn-add" id="btn-new-post">+ Nuovo</button>
         </div>
-        <div id="bacheca-list" class="card-list">
-          <div class="card">
-            <div class="card-meta">Giancarlo &bull; oggi</div>
-            <div class="card-body">Benvenuti nell'app di gestione. Iniziate ad usarla!</div>
-          </div>
-        </div>
+        <div id="bacheca-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
         <div id="form-post" class="form-panel hidden">
-          <textarea id="txt-post" placeholder="Scrivi un messaggio..."></textarea>
+          <textarea id="txt-post" placeholder="Scrivi un messaggio per tutti..."></textarea>
           <div class="form-actions">
             <button class="btn-secondary" id="btn-cancel-post">Annulla</button>
             <button class="btn-primary" id="btn-save-post">Pubblica</button>
@@ -87,9 +77,7 @@
           <h2>&#127858; Ordini</h2>
           <button class="btn-add" id="btn-new-ordine">+ Nuovo</button>
         </div>
-        <div id="ordini-list" class="card-list">
-          <div class="empty-state">Nessun ordine attivo</div>
-        </div>
+        <div id="ordini-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
         <div id="form-ordine" class="form-panel hidden">
           <input type="number" id="txt-tavolo" placeholder="Numero tavolo" min="1" max="30" />
           <textarea id="txt-ordine" placeholder="Descrivi l'ordine..."></textarea>
@@ -106,18 +94,21 @@
           <h2>&#128197; Turni</h2>
           <button class="btn-add" id="btn-new-turno">+ Aggiungi</button>
         </div>
-        <div id="turni-list" class="card-list">
-          <div class="empty-state">Nessun turno registrato</div>
-        </div>
+        <div id="turni-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
         <div id="form-turno" class="form-panel hidden">
+          <label style="font-size:12px;color:var(--text-muted);margin:0 0 4px;display:block">Data</label>
           <input type="date" id="txt-data" />
+          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Turno</label>
           <select id="sel-turno-tipo">
-            <option value="pranzo">Pranzo</option>
-            <option value="cena">Cena</option>
+            <option value="colazione">&#9749; Colazione</option>
+            <option value="pranzo">&#127774; Pranzo</option>
+            <option value="cena">&#127771; Cena</option>
           </select>
+          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Persona</label>
           <select id="sel-turno-utente">
             <option value="Giancarlo">Giancarlo</option>
             <option value="Sabrina">Sabrina</option>
+            <option value="Cecilia">Cecilia</option>
             <option value="Marco">Marco</option>
             <option value="Elena">Elena</option>
             <option value="Luca">Luca</option>
@@ -135,11 +126,10 @@
           <h2>&#9989; Attivit&agrave;</h2>
           <button class="btn-add" id="btn-new-task">+ Nuova</button>
         </div>
-        <div id="attivita-list" class="card-list">
-          <div class="empty-state">Nessuna attivit&agrave; in corso</div>
-        </div>
+        <div id="attivita-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
         <div id="form-task" class="form-panel hidden">
           <input type="text" id="txt-task" placeholder="Descrivi l'attivita..." />
+          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Priorita</label>
           <select id="sel-task-priorita">
             <option value="normale">Normale</option>
             <option value="urgente">Urgente</option>
@@ -153,7 +143,6 @@
 
     </main>
 
-    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-target="bacheca">
         <span class="nav-icon">&#128203;</span>
@@ -172,7 +161,6 @@
         <span class="nav-label">Attivita</span>
       </button>
     </nav>
-
   </div>
 
   <script src="app.js"></script>
