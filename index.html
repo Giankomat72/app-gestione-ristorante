@@ -21,7 +21,7 @@
         <p class="logo-sub">Gestione Interna</p>
       </div>
       <div class="login-form">
-        <label for="sel-nome">Chi sei?</label>
+        <label for="sel-nome">CHI SEI?</label>
         <select id="sel-nome">
           <option value="">-- Seleziona --</option>
           <option value="Giancarlo">Giancarlo</option>
@@ -31,8 +31,8 @@
           <option value="Elena">Elena</option>
           <option value="Luca">Luca</option>
         </select>
-        <label for="inp-pin">PIN personale</label>
-        <input type="password" id="inp-pin" placeholder="PIN a 4 cifre" maxlength="4" inputmode="numeric" pattern="[0-9]*" />
+        <label for="inp-pin">PIN PERSONALE</label>
+        <input id="inp-pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN a 4 cifre" />
         <p id="pin-errore" class="pin-errore hidden">PIN errato. Riprova.</p>
         <p id="pin-occupato" class="pin-errore hidden">Utente gia connesso su un altro dispositivo.</p>
         <button id="btn-login" class="btn-primary">Accedi</button>
@@ -43,68 +43,62 @@
   <!-- APP -->
   <div id="screen-app" class="screen">
     <header class="app-header">
-      <div class="header-left">
-        <span class="header-logo">&#127869;</span>
-        <span class="header-title">Ristorante Sabrina</span>
-      </div>
-      <div class="header-right">
-        <span id="header-utente" class="header-user"></span>
-        <button id="btn-logout" class="btn-logout" title="Esci">&#x2715;</button>
-      </div>
+      <span class="app-title">&#127869; Ristorante Sabrina</span>
+      <span id="header-utente" class="header-utente"></span>
+      <button id="btn-logout" class="btn-logout">Esci</button>
     </header>
 
     <main class="app-main">
 
       <!-- BACHECA -->
-      <section id="sec-bacheca" class="section active">
+      <div id="sec-bacheca" class="section active">
         <div class="section-header">
-          <h2>&#128203; Bacheca</h2>
-          <button class="btn-add" id="btn-new-post">+ Nuovo</button>
+          <h2>Bacheca</h2>
+          <button id="btn-new-post" class="btn-secondary">+ Messaggio</button>
         </div>
-        <div id="bacheca-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
-        <div id="form-post" class="form-panel hidden">
-          <textarea id="txt-post" placeholder="Scrivi un messaggio per tutti..."></textarea>
+        <div id="form-post" class="card hidden">
+          <textarea id="txt-post" placeholder="Scrivi un messaggio per la bacheca..." rows="3"></textarea>
           <div class="form-actions">
-            <button class="btn-secondary" id="btn-cancel-post">Annulla</button>
-            <button class="btn-primary" id="btn-save-post">Pubblica</button>
+            <button id="btn-cancel-post" class="btn-ghost">Annulla</button>
+            <button id="btn-save-post" class="btn-primary">Pubblica</button>
           </div>
         </div>
-      </section>
+        <div id="bacheca-list" class="list-container"></div>
+      </div>
 
       <!-- ORDINI -->
-      <section id="sec-ordini" class="section">
+      <div id="sec-ordini" class="section">
         <div class="section-header">
-          <h2>&#127858; Ordini</h2>
-          <button class="btn-add" id="btn-new-ordine">+ Nuovo</button>
+          <h2>Ordini</h2>
+          <button id="btn-new-ordine" class="btn-secondary">+ Ordine</button>
         </div>
-        <div id="ordini-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
-        <div id="form-ordine" class="form-panel hidden">
-          <input type="number" id="txt-tavolo" placeholder="Numero tavolo" min="1" max="30" />
-          <textarea id="txt-ordine" placeholder="Descrivi l'ordine..."></textarea>
+        <div id="form-ordine" class="card hidden">
+          <input id="txt-tavolo" type="number" placeholder="Numero tavolo" min="1" max="99" />
+          <textarea id="txt-ordine" placeholder="Descrivi l'ordine..." rows="3"></textarea>
           <div class="form-actions">
-            <button class="btn-secondary" id="btn-cancel-ordine">Annulla</button>
-            <button class="btn-primary" id="btn-save-ordine">Invia</button>
+            <button id="btn-cancel-ordine" class="btn-ghost">Annulla</button>
+            <button id="btn-save-ordine" class="btn-primary">Salva</button>
           </div>
         </div>
-      </section>
+        <div id="ordini-list" class="list-container"></div>
+      </div>
 
       <!-- TURNI -->
-      <section id="sec-turni" class="section">
+      <div id="sec-turni" class="section">
         <div class="section-header">
-          <h2>&#128197; Turni</h2>
-          <button class="btn-add" id="btn-new-turno">+ Aggiungi</button>
+          <h2>Turni</h2>
+          <button id="btn-new-turno" class="btn-secondary">+ Turno</button>
         </div>
-        <div id="turni-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
-        <div id="form-turno" class="form-panel hidden">
-          <label style="font-size:12px;color:var(--text-muted);margin:0 0 4px;display:block">Data</label>
-          <input type="date" id="txt-data" />
-          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Turno</label>
+        <div id="form-turno" class="card hidden">
+          <label>Data</label>
+          <input id="txt-data" type="date" />
+          <label>Turno</label>
           <select id="sel-turno-tipo">
             <option value="colazione">&#9749; Colazione</option>
             <option value="pranzo">&#127774; Pranzo</option>
-            <option value="cena">&#127771; Cena</option>
+            <option value="cena">&#127769; Cena</option>
           </select>
-          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Persona</label>
+          <label>Persona</label>
           <select id="sel-turno-utente">
             <option value="Giancarlo">Giancarlo</option>
             <option value="Sabrina">Sabrina</option>
@@ -114,51 +108,54 @@
             <option value="Luca">Luca</option>
           </select>
           <div class="form-actions">
-            <button class="btn-secondary" id="btn-cancel-turno">Annulla</button>
-            <button class="btn-primary" id="btn-save-turno">Salva</button>
+            <button id="btn-cancel-turno" class="btn-ghost">Annulla</button>
+            <button id="btn-save-turno" class="btn-primary">Salva</button>
           </div>
         </div>
-      </section>
+        <div id="turni-list" class="list-container"></div>
+      </div>
 
       <!-- ATTIVITA -->
-      <section id="sec-attivita" class="section">
+      <div id="sec-attivita" class="section">
         <div class="section-header">
-          <h2>&#9989; Attivit&agrave;</h2>
-          <button class="btn-add" id="btn-new-task">+ Nuova</button>
+          <h2>Attivita</h2>
+          <button id="btn-new-task" class="btn-secondary">+ Attivita</button>
         </div>
-        <div id="attivita-list" class="card-list"><div class="loading-state">&#8987; Caricamento...</div></div>
-        <div id="form-task" class="form-panel hidden">
-          <input type="text" id="txt-task" placeholder="Descrivi l'attivita..." />
-          <label style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;display:block">Priorita</label>
+        <div id="form-task" class="card hidden">
+          <textarea id="txt-task" placeholder="Descrivi l'attivita..." rows="2"></textarea>
+          <label>Priorita</label>
           <select id="sel-task-priorita">
             <option value="normale">Normale</option>
+            <option value="alta">Alta</option>
             <option value="urgente">Urgente</option>
           </select>
           <div class="form-actions">
-            <button class="btn-secondary" id="btn-cancel-task">Annulla</button>
-            <button class="btn-primary" id="btn-save-task">Aggiungi</button>
+            <button id="btn-cancel-task" class="btn-ghost">Annulla</button>
+            <button id="btn-save-task" class="btn-primary">Salva</button>
           </div>
         </div>
-      </section>
+        <div id="attivita-list" class="list-container"></div>
+      </div>
 
     </main>
 
+    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-target="bacheca">
         <span class="nav-icon">&#128203;</span>
-        <span class="nav-label">Bacheca</span>
+        <span>Bacheca</span>
       </button>
       <button class="nav-btn" data-target="ordini">
-        <span class="nav-icon">&#127858;</span>
-        <span class="nav-label">Ordini</span>
+        <span class="nav-icon">&#127860;</span>
+        <span>Ordini</span>
       </button>
       <button class="nav-btn" data-target="turni">
         <span class="nav-icon">&#128197;</span>
-        <span class="nav-label">Turni</span>
+        <span>Turni</span>
       </button>
       <button class="nav-btn" data-target="attivita">
         <span class="nav-icon">&#9989;</span>
-        <span class="nav-label">Attivita</span>
+        <span>Attivita</span>
       </button>
     </nav>
   </div>
