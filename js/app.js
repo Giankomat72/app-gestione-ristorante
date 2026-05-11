@@ -65,8 +65,8 @@ function initApp() {
 function handleLogin(e) {
   e.preventDefault();
   
-  const nome = document.getElementById('input-nome').value.trim();
-  const pin = document.getElementById('input-pin').value.trim();
+  const nome = document.getElementById('sel-nome').value.trim();
+  const pin = document.getElementById('inp-pin').value.trim();
   
   // Verifica credenziali
   const user = CONFIG.USERS.find(u => 
@@ -86,8 +86,8 @@ function handleLogin(e) {
 function handleLogout() {
   currentUser = null;
   showScreen('login');
-  document.getElementById('input-nome').value = '';
-  document.getElementById('input-pin').value = '';
+  document.getElementById('sel-nome').value = '';
+  document.getElementById('inp-pin').value = '';
 }
 
 function showScreen(screen) {
