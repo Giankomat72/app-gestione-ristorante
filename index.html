@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ristorante Sabrina</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <h1>🍽 Ristorante Sabrina</h1>
+  <p>Gestione Interna</p>
+  <label>CHI SEI?</label>
+  <select id="sel-nome">
+    <option value="">-- Seleziona --</option>
+    <option>Giancarlo</option>
+    <option>Sabrina</option>
+    <option>Cecilia</option>
+    <option>Marco</option>
+    <option>Elena</option>
+    <option>Luca</option>
+  </select>
+  <label>PIN PERSONALE</label>
+  <input id="inp-pin" type="password" maxlength="4">
+  <button id="btn-login">Accedi</button>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <header>
+    <span>🍽 Ristorante Sabrina</span>
+    <span id="header-utente"></span>
+    <button id="btn-logout">Esci</button>
+  </header>
+  
+  <main>
+    <h2>Bacheca</h2>
+    <div id="lista-bacheca"></div>
+    <button id="btn-new-post">+ Messaggio</button>
+    
+    <h2>Ordini</h2>
+    <div id="lista-ordini"></div>
+    <button id="btn-new-ordine">+ Ordine</button>
+    
+    <h2>Turni</h2>
+    <div id="lista-turni"></div>
+    <button id="btn-new-turno">+ Turno</button>
+    
+    <h2>Attivita</h2>
+    <div id="lista-attivita"></div>
+    <button id="btn-new-task">+ Attivita</button>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
