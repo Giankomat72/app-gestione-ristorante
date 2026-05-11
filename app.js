@@ -118,3 +118,62 @@ $('btn-login').addEventListener('click', async () => {
   });
 
 });
+
+
+// === UI HELPER FUNCTIONS ===
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function hide(id) {
+  $(id).classList.add('hidden');
+}
+
+function toggle(id) {
+  $(id).classList.toggle('hidden');
+}
+
+function chiaveTurno(data) {
+  return formatData(data);
+}
+
+// === DATA LOADING ===
+
+async function caricaTutto() {
+  state.bacheca = await apiGet(FOGLI.bacheca);
+  state.ordini = await apiGet(FOGLI.ordini);
+  state.turni = await apiGet(FOGLI.turni);
+  state.attivita = await apiGet(FOGLI.attivita);
+  renderBacheca();
+  renderOrdini();
+  renderTurni();
+  renderAttivita();
+}
+
+// === RENDER FUNCTIONS ===
+
+function renderBacheca() {
+  const div = $('lista-bacheca');
+  if (!div) return;
+  div.innerHTML = state.bacheca.map(b => `<div class="card"><strong>${b.Utente||''}</strong> ${b.Messaggio||''}<br><small>${b.DataOra||''}</small></div>`).join('');
+}
+
+function renderOrdini() {
+  const div = $('lista-ordini');
+  if (!div) return;
+  div.innerHTML = state.ordini.map(o => `<div class="card">Tavolo ${o.Tavolo||''} - ${o.Ordine||''}<br><small>Cameriere: ${o.Cameriere||''} - ${o.OrdineOra||''}</small><br>Stato: ${o.Stato||'aperto'}</div>`).join('');
+}
+
+function renderTurni() {
+  const div = $('lista-turni');
+  if (!div) return;
+  div.innerHTML = state.turni.map(t => `<div class="card">${formatData(t.DataTurno)} - ${t.TipoTurno||''}<br>${t.NomePersona||''}</div>`).join('');
+}
+
+function renderAttivita() {
+  const div = $('lista-attivita');
+  if (!div) return;
+  div.innerHTML = state.attivita.map(a => `<div class="card"><strong>${a.Descrizione||''}</strong><br>Priorita: ${a.Priorita||'normale'} - Assegnato a: ${a.AssegnatoA||''}<br>Stato: ${a.Stato||'Da fare'}</div>`).join('');
+}
