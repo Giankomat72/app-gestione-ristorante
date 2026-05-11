@@ -41,6 +41,121 @@
   </div>
 
   <!-- APP -->
+
+  <div id="screen-app" class="screen">
+  <header class="app-header">
+    <span class="app-title">🍽 Ristorante Sabrina</span>
+    <span id="header-utente" class="header-utente"></span>
+    <button id="btn-logout" class="btn-logout">Esci</button>
+  </header>
+
+  <main class="app-main">
+
+    <!-- BACHECA -->
+    <div id="sec-bacheca" class="section active">
+      <div class="section-header">
+        <h2>Bacheca</h2>
+        <div id="lista-bacheca"></div>
+        <button id="btn-new-post" class="btn-secondary">+ Messaggio</button>
+      </div>
+    </div>
+
+    <div id="form-post" class="card hidden">
+      <textarea id="txt-post" placeholder="Scrivi un messaggio per la bacheca..." rows="3"></textarea>
+      <button id="btn-cancel-post" class="btn-ghost">Annulla</button>
+      <button id="btn-save-post" class="btn-primary">Pubblica</button>
+    </div>
+
+    <!-- ORDINI -->
+    <div id="sec-ordini" class="section">
+      <div class="section-header">
+        <h2>Ordini</h2>
+        <div id="lista-ordini"></div>
+        <button id="btn-new-ordine" class="btn-secondary">+ Ordine</button>
+      </div>
+    </div>
+
+    <div id="form-ordine" class="card hidden">
+      <input id="txt-tavolo" type="number" placeholder="Numero tavolo" min="1" max="99">
+      <textarea id="txt-ordine" placeholder="Ordine..." rows="2"></textarea>
+      <button id="btn-cancel-ordine" class="btn-ghost">Annulla</button>
+      <button id="btn-save-ordine" class="btn-primary">Salva</button>
+    </div>
+
+    <!-- TURNI -->
+    <div id="sec-turni" class="section">
+      <div class="section-header">
+        <h2>Turni</h2>
+        <div id="lista-turni"></div>
+        <button id="btn-new-turno" class="btn-secondary">+ Turno</button>
+      </div>
+    </div>
+
+    <div id="form-turno" class="card hidden">
+      <label>Data</label>
+      <input id="txt-data" type="date">
+      <label>Turno</label>
+      <select id="sel-turno-tipo">
+        <option value="colazione">☕ Colazione</option>
+        <option value="pranzo">🌞 Pranzo</option>
+        <option value="cena">🌙 Cena</option>
+      </select>
+      <label>Persona</label>
+      <select id="sel-turno-utente">
+        <option value="Giancarlo">Giancarlo</option>
+        <option value="Sabrina">Sabrina</option>
+        <option value="Cecilia">Cecilia</option>
+        <option value="Marco">Marco</option>
+        <option value="Elena">Elena</option>
+        <option value="Luca">Luca</option>
+      </select>
+      <button id="btn-cancel-turno" class="btn-ghost">Annulla</button>
+      <button id="btn-save-turno" class="btn-primary">Salva</button>
+    </div>
+
+    <!-- ATTIVITA -->
+    <div id="sec-attivita" class="section">
+      <div class="section-header">
+        <h2>Attivita</h2>
+        <div id="lista-attivita"></div>
+        <button id="btn-new-task" class="btn-secondary">+ Attivita</button>
+      </div>
+    </div>
+
+    <div id="form-task" class="card hidden">
+      <textarea id="txt-task" placeholder="Descrivi l'attivita..." rows="2"></textarea>
+      <label>Priorita</label>
+      <select id="sel-task-priorita">
+        <option value="normale">Normale</option>
+        <option value="alta">Alta</option>
+        <option value="urgente">Urgente</option>
+      </select>
+      <button id="btn-cancel-task" class="btn-ghost">Annulla</button>
+      <button id="btn-save-task" class="btn-primary">Salva</button>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-target="bacheca">
+      <span class="nav-icon">📋</span>
+      <span>Bacheca</span>
+    </button>
+    <button class="nav-btn" data-target="ordini">
+      <span class="nav-icon">🍴</span>
+      <span>Ordini</span>
+    </button>
+    <button class="nav-btn" data-target="turni">
+      <span class="nav-icon">📅</span>
+      <span>Turni</span>
+    </button>
+    <button class="nav-btn" data-target="attivita">
+      <span class="nav-icon">✅</span>
+      <span>Attivita</span>
+    </button>
+  </nav>
+</div>
   <div id="screen-app" class="screen">
     <header class="app-header">
       <span class="app-title">&#127869; Ristorante Sabrina</span>
