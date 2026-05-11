@@ -75,12 +75,13 @@ function handleLogin(e) {
   
   if (user) {
     currentUser = user.name;
-    document.getElementById('header-utente').textContent = user.name;
     showScreen('app');
     loadData();
   } else {
-    alert('Nome utente o PIN non validi');
-  }
+    const headerUtente = document.getElementById('header-utente');
+    if (headerUtente) {
+      headerUtente.textContent = user.name;
+    }  }
 }
 
 function handleLogout() {
