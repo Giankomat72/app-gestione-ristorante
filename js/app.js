@@ -1,233 +1,248 @@
-// app.js - Gestione principale applicazione PWA Gestione Ristorante
+// app.js - Gestione PWA Ristorante Sabrina
 
-// Configurazione globale
+// Configurazione
 const CONFIG = {
-  SPREADSHEET_ID: '', // Inserire ID dello Spreadsheet Google Sheets
-  API_KEY: '', // Inserire API Key di Google
-  SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
-  VERSION: '1.0.0'
+  SCRIPT_URL: '', // URL di Google Apps Script
+  USERS: [
+    { name: 'Giancarlo', pin: '1234' },
+    { name: 'Cecilia', pin: '5678' }
+  ],
+  TURNI: ['colazione', 'pranzo', 'cena']
 };
 
 // Stato applicazione
-const AppState = {
-  currentSection: 'home',
-  userData: null,
-  isOnline: navigator.onLine,
-  lastSync: null
-};
+let currentUser = null;
+let currentTurno = 'colazione';
 
-// Inizializzazione app
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('App Gestione Ristorante - Avvio');
-  
-  // Registra Service Worker
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js');
-      console.log('Service Worker registrato:', registration);
-    } catch (error) {
-      console.error('Errore registrazione Service Worker:', error);
-    }
-  }
-  
-  // Inizializza interfaccia
-  initUI();
-  
-  // Gestione stato online/offline
-  window.addEventListener('online', handleOnlineStatus);
-  window.addEventListener('offline', handleOnlineStatus);
-  
-  // Carica dati utente salvati
-  loadUserData();
-  
-  // Mostra sezione home
-  showSection('home');
+// Inizializzazione
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('App Ristorante avviata');
+  initApp();
 });
 
-// Inizializzazione interfaccia utente
-function initUI() {
-  // Gestione navigazione menu
-  const navLinks = document.querySelectorAll('.nav-link');
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const section = link.dataset.section;
-      showSection(section);
-      updateActiveNav(link);
+function initApp() {
+  // Setup event listeners
+  const btnLogin = document.getElementById('btn-login');
+  if (btnLogin) {
+    btnLogin.addEventListener('click', handleLogin);
+  }
+  
+  // Bottoni turni
+  document.querySelectorAll('.turno-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const turno = e.target.dataset.turno;
+      switchTurno(turno);
     });
   });
   
-  // Pulsante refresh
-  const refreshBtn = document.getElementById('refreshBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', handleRefresh);
-  }
-  
-  // Aggiorna stato connessione UI
-  updateConnectionStatus();
-}
-
-// Mostra sezione specifica
-function showSection(sectionName) {
-  // Nascondi tutte le sezioni
-  const sections = document.querySelectorAll('.section');
-  sections.forEach(section => {
-    section.classList.remove('active');
+  // Tab navigation
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tab = e.target.dataset.tab;
+      switchTab(tab);
+    });
   });
   
-  // Mostra sezione selezionata
-  const targetSection = document.getElementById(sectionName + 'Section');
-  if (targetSection) {
-    targetSection.classList.add('active');
-    AppState.currentSection = sectionName;
-    
-    // Carica dati sezione
-    loadSectionData(sectionName);
+  // Logout
+  const btnLogout = document.getElementById('btn-logout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', handleLogout);
   }
-}
-
-// Carica dati per sezione specifica
-async function loadSectionData(sectionName) {
-  switch(sectionName) {
-    case 'turni':
-      if (typeof loadTurni === 'function') {
-        await loadTurni();
-      }
-      break;
-    case 'bacheca':
-      if (typeof loadBacheca === 'function') {
-        await loadBacheca();
-      }
-      break;
-    case 'ordini':
-      if (typeof loadOrdini === 'function') {
-        await loadOrdini();
-      }
-      break;
-    case 'attivita':
-      if (typeof loadAttivita === 'function') {
-        await loadAttivita();
-      }
-      break;
-  }
-}
-
-// Aggiorna navigazione attiva
-function updateActiveNav(activeLink) {
-  const navLinks = document.querySelectorAll('.nav-link');
-  navLinks.forEach(link => link.classList.remove('active'));
-  activeLink.classList.add('active');
-}
-
-// Gestione stato online/offline
-function handleOnlineStatus() {
-  AppState.isOnline = navigator.onLine;
-  updateConnectionStatus();
   
-  if (AppState.isOnline) {
-    console.log('Connessione ripristinata');
-    showNotification('Connessione ripristinata', 'success');
-    syncData();
+  // Form disponibilità
+  const formDisponibilita = document.getElementById('form-disponibilita');
+  if (formDisponibilita) {
+    formDisponibilita.addEventListener('submit', handleDisponibilita);
+  }
+  
+  // Form bacheca
+  const formBacheca = document.getElementById('form-bacheca');
+  if (formBacheca) {
+    formBacheca.addEventListener('submit', handleBacheca);
+  }
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  
+  const nome = document.getElementById('input-nome').value.trim();
+  const pin = document.getElementById('input-pin').value.trim();
+  
+  // Verifica credenziali
+  const user = CONFIG.USERS.find(u => 
+    u.name.toLowerCase() === nome.toLowerCase() && u.pin === pin
+  );
+  
+  if (user) {
+    currentUser = user.name;
+    document.getElementById('header-utente').textContent = user.name;
+    showScreen('app');
+    loadData();
   } else {
-    console.log('Connessione persa');
-    showNotification('Modalità offline attivata', 'warning');
+    alert('Nome utente o PIN non validi');
   }
 }
 
-// Aggiorna indicatore connessione UI
-function updateConnectionStatus() {
-  const statusIndicator = document.getElementById('connectionStatus');
-  if (statusIndicator) {
-    statusIndicator.className = AppState.isOnline ? 'status-online' : 'status-offline';
-    statusIndicator.textContent = AppState.isOnline ? 'Online' : 'Offline';
-  }
+function handleLogout() {
+  currentUser = null;
+  showScreen('login');
+  document.getElementById('input-nome').value = '';
+  document.getElementById('input-pin').value = '';
 }
 
-// Sincronizzazione dati
-async function syncData() {
-  if (!AppState.isOnline) return;
+function showScreen(screen) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  document.getElementById(`screen-${screen}`).classList.add('active');
+}
+
+function switchTurno(turno) {
+  currentTurno = turno;
+  document.querySelectorAll('.turno-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  loadData();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+async function loadData() {
+  if (!CONFIG.SCRIPT_URL) {
+    console.log('URL Apps Script non configurato');
+    return;
+  }
   
   try {
-    console.log('Sincronizzazione dati...');
-    // Qui verrà implementata la sincronizzazione con Google Sheets
-    AppState.lastSync = new Date();
-    showNotification('Dati sincronizzati', 'success');
+    const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getData&turno=${currentTurno}`);
+    const data = await response.json();
+    
+    if (data.disponibilita) {
+      displayDisponibilita(data.disponibilita);
+    }
+    if (data.bacheca) {
+      displayBacheca(data.bacheca);
+    }
   } catch (error) {
-    console.error('Errore sincronizzazione:', error);
-    showNotification('Errore sincronizzazione dati', 'error');
+    console.error('Errore caricamento dati:', error);
   }
 }
 
-// Refresh manuale
-async function handleRefresh() {
-  showNotification('Aggiornamento in corso...', 'info');
-  await syncData();
-  await loadSectionData(AppState.currentSection);
+function displayDisponibilita(items) {
+  const container = document.getElementById('lista-disponibilita');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'disp-item';
+    div.innerHTML = `
+      <strong>${item.nome}</strong> - ${item.data}<br>
+      ${item.note || ''}
+    `;
+    container.appendChild(div);
+  });
 }
 
-// Carica dati utente
-function loadUserData() {
-  const savedUser = localStorage.getItem('userData');
-  if (savedUser) {
-    AppState.userData = JSON.parse(savedUser);
+function displayBacheca(messages) {
+  const container = document.getElementById('lista-bacheca');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = 'message-item';
+    div.innerHTML = `
+      <strong>${msg.autore}</strong> <span>${msg.data}</span><br>
+      ${msg.testo}
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function handleDisponibilita(e) {
+  e.preventDefault();
+  
+  const data = document.getElementById('input-data').value;
+  const disponibile = document.getElementById('input-disponibile').checked;
+  const note = document.getElementById('input-note').value;
+  
+  if (!CONFIG.SCRIPT_URL) {
+    alert('Configurazione incompleta');
+    return;
+  }
+  
+  try {
+    const response = await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addDisponibilita',
+        turno: currentTurno,
+        nome: currentUser,
+        data: data,
+        disponibile: disponibile,
+        note: note
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      alert('Disponibilità salvata');
+      loadData();
+      e.target.reset();
+    }
+  } catch (error) {
+    console.error('Errore salvataggio disponibilità:', error);
+    alert('Errore durante il salvataggio');
   }
 }
 
-// Salva dati utente
-function saveUserData(userData) {
-  AppState.userData = userData;
-  localStorage.setItem('userData', JSON.stringify(userData));
-}
-
-// Sistema notifiche
-function showNotification(message, type = 'info') {
-  // Crea elemento notifica
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
+async function handleBacheca(e) {
+  e.preventDefault();
   
-  // Aggiungi al DOM
-  document.body.appendChild(notification);
+  const testo = document.getElementById('input-messaggio').value;
   
-  // Mostra con animazione
-  setTimeout(() => notification.classList.add('show'), 10);
+  if (!CONFIG.SCRIPT_URL) {
+    alert('Configurazione incompleta');
+    return;
+  }
   
-  // Rimuovi dopo 3 secondi
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  try {
+    const response = await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addMessage',
+        autore: currentUser,
+        testo: testo
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      alert('Messaggio pubblicato');
+      loadData();
+      e.target.reset();
+    }
+  } catch (error) {
+    console.error('Errore pubblicazione messaggio:', error);
+    alert('Errore durante la pubblicazione');
+  }
 }
 
-// Utility: formatta data
-function formatDate(date) {
-  if (!(date instanceof Date)) date = new Date(date);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(reg => console.log('Service Worker registrato', reg))
+    .catch(err => console.error('Errore Service Worker', err));
 }
-
-// Utility: formatta ora
-function formatTime(date) {
-  if (!(date instanceof Date)) date = new Date(date);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-// Utility: formatta data e ora
-function formatDateTime(date) {
-  return `${formatDate(date)} ${formatTime(date)}`;
-}
-
-// Export per altri moduli
-window.App = {
-  showSection,
-  showNotification,
-  formatDate,
-  formatTime,
-  formatDateTime,
-  state: AppState,
-  config: CONFIG
-};
